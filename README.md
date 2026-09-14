@@ -1,0 +1,462 @@
+# 🛒 ShopStream — Databricks Data Engineering Project
+
+ShopStream is an end-to-end **Data Engineering project** for an e-commerce company that sells products ranging from mechanical keyboards to yoga mats.
+
+The project demonstrates how to build a modern **Lakehouse data pipeline** using Databricks, starting from raw data ingestion and ending with business-ready analytics and dashboards.
+
+---
+
+## 📌 Project Overview
+
+ShopStream has two main data challenges:
+
+1. **Batch data** — six months of historical customers, products, and orders stored as CSV files.
+2. **Streaming data** — new order events arriving continuously as JSON events.
+
+The project processes both types of data using a **Medallion Architecture**:
+
+```text
+                    Raw Data
+                       │
+              ┌────────┴────────┐
+              │                 │
+          CSV Files         JSON Events
+              │                 │
+              ▼                 ▼
+           Bronze           Auto Loader
+              │                 │
+              └────────┬────────┘
+                       ▼
+                    Silver
+                       │
+                       ▼
+                     Gold
+                       │
+                       ▼
+                  Dashboard
+```
+
+---
+
+# 🏗️ Architecture
+
+## 🥉 Bronze Layer
+
+The Bronze layer is responsible for ingesting raw data into Databricks with minimal transformation.
+
+Historical data includes:
+
+- Customers
+- Products
+- Orders
+
+The data is stored as **Delta tables**.
+
+Example:
+
+```text
+Raw CSV
+   ↓
+Databricks Volume
+   ↓
+COPY INTO
+   ↓
+Bronze Delta Table
+```
+
+---
+
+## 🥈 Silver Layer
+
+The Silver layer contains cleaned and prepared data.
+
+Transformations include:
+
+- Data type standardization
+- Data cleaning
+- Handling invalid records
+- Removing duplicates where appropriate
+- Handling missing values
+- Preparing data for analytical use
+
+Example:
+
+```text
+Bronze
+   ↓
+Cleaning & Transformation
+   ↓
+Silver
+```
+
+---
+
+## 🥇 Gold Layer
+
+The Gold layer contains business-ready datasets and metrics designed for analytics and dashboards.
+
+Examples of metrics include:
+
+- Total revenue
+- Units sold
+- Gross profit
+- Gross margin
+- Category performance
+- Daily revenue
+- Revenue by country
+- Revenue by signup channel
+- Customer lifetime value
+
+Example:
+
+```text
+Silver
+   ↓
+Business Transformations
+   ↓
+Gold Tables
+   ↓
+Dashboard
+```
+
+---
+
+# 📊 Dashboard
+
+The project includes a Databricks dashboard for monitoring and analyzing ShopStream's business performance.
+
+## Current Dashboard
+
+![ShopStream Dashboard](dashboard.png)
+
+### Current visualizations
+
+- **Gross Margin by Category**
+- **Daily Revenue Trend**
+- **Revenue Distribution by Country**
+- **Revenue by Signup Channel**
+
+These visualizations help analyze business performance across:
+
+- Product categories
+- Time
+- Countries
+- Customer acquisition channels
+
+---
+
+# 🛠️ Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| **Databricks Free Edition** | Lakehouse platform |
+| **Apache Spark** | Distributed data processing |
+| **PySpark** | Data transformation |
+| **Spark SQL** | SQL-based analytics |
+| **Delta Lake** | Reliable table storage |
+| **Unity Catalog** | Data organization and governance |
+| **Auto Loader** | Streaming file ingestion |
+| **SQL** | Data analysis and transformation |
+| **Databricks Dashboards** | Business analytics |
+| **Git & GitHub** | Version control |
+
+---
+
+# 🔄 Data Pipeline
+
+The overall pipeline follows:
+
+```text
+                   DATA SOURCES
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+      Historical CSV            JSON Events
+          │                         │
+          ▼                         ▼
+       BATCH                    STREAMING
+          │                         │
+          └────────────┬────────────┘
+                       │
+                       ▼
+                  🥉 BRONZE
+                       │
+                       ▼
+                   🥈 SILVER
+                       │
+                       ▼
+                    🥇 GOLD
+                       │
+                       ▼
+                  DASHBOARD
+```
+
+---
+
+# 📈 Business Metrics
+
+The Gold layer provides business metrics that can be used by analysts and business stakeholders.
+
+### Revenue
+
+```text
+Revenue = Quantity × Unit Price
+```
+
+### Cost
+
+```text
+Cost = Quantity × Unit Cost
+```
+
+### Gross Profit
+
+```text
+Gross Profit = Revenue − Cost
+```
+
+### Gross Margin
+
+```text
+Gross Margin % =
+(Gross Profit / Revenue) × 100
+```
+
+### Category Performance
+
+Category performance can be analyzed using:
+
+- Revenue
+- Units sold
+- Orders
+- Gross profit
+- Gross margin
+
+Categories are obtained from the **Product Dimension** rather than duplicating category information inside the fact table.
+
+### Customer Lifetime Value
+
+Historical customer lifetime value is calculated from the total value generated by a customer across their completed orders.
+
+```text
+Customer Lifetime Value =
+Total Customer Revenue
+```
+
+---
+
+# 🧱 Data Modeling
+
+The analytical model follows dimensional modeling principles.
+
+A simplified structure is:
+
+```text
+                 dim_customer
+                      │
+                      │
+                      ▼
+dim_date ───────► fact_order_items ◄────── dim_product
+                      │
+                      │
+                      ├── order_id
+                      ├── status
+                      ├── coupon_code
+                      ├── quantity
+                      ├── unit_price
+                      ├── unit_cost
+                      ├── sales_amount
+                      └── cost_amount
+```
+
+The **Product Dimension** contains attributes such as:
+
+```text
+product_id
+product_name
+category
+unit_price
+unit_cost
+```
+
+The fact table contains transactional measurements such as:
+
+```text
+quantity
+sales_amount
+cost_amount
+```
+
+This allows business metrics to be calculated at different levels of analysis.
+
+---
+
+# 🚀 Streaming Pipeline
+
+The project also includes a streaming ingestion path for continuously arriving JSON order events.
+
+The streaming architecture is:
+
+```text
+JSON Events
+     │
+     ▼
+Auto Loader
+     │
+     ▼
+Bronze Delta Table
+     │
+     ▼
+Silver
+     │
+     ▼
+Gold
+     │
+     ▼
+Dashboard
+```
+
+Auto Loader allows new files to be detected and processed incrementally as they arrive.
+
+---
+
+# ⚙️ Production Workflow
+
+The final project will include a production-oriented Databricks workflow containing:
+
+- Scheduled jobs
+- Multiple tasks
+- Task dependencies
+- Batch processing
+- Streaming processing
+- Data quality checks
+- Monitoring
+
+Example:
+
+```text
+Ingest
+  │
+  ▼
+Bronze
+  │
+  ▼
+Silver
+  │
+  ▼
+Gold
+  │
+  ▼
+Dashboard
+```
+
+---
+
+# 🎯 Project Goals
+
+The main goal of this project is to build a complete Data Engineering pipeline rather than working with isolated technologies.
+
+The project covers:
+
+- [x] Batch data ingestion
+- [x] Bronze layer
+- [x] Silver layer
+- [x] Gold layer
+- [x] Delta tables
+- [x] PySpark
+- [x] Spark SQL
+- [x] Dimensional modeling
+- [x] Business metrics
+- [x] Databricks dashboard
+- [ ] Streaming ingestion with Auto Loader
+- [ ] Batch + streaming integration
+- [ ] Declarative Lakeflow pipeline
+- [ ] Data quality expectations
+- [ ] Production Databricks Job
+- [ ] Task dependencies
+- [ ] Pipeline monitoring
+
+---
+
+# 📁 Repository Structure
+
+```text
+ShopStream/
+│
+├── README.md
+├── dashboard.png
+│
+├── notebooks/
+│   ├── bronze/
+│   │   └── ...
+│   │
+│   ├── silver/
+│   │   └── ...
+│   │
+│   └── gold/
+│       └── ...
+│
+├── pipelines/
+│   └── ...
+│
+└── jobs/
+    └── ...
+```
+
+The exact structure may evolve as additional pipeline components are added.
+
+---
+
+# 📚 Key Learning Outcomes
+
+This project connects several Data Engineering concepts into one practical workflow:
+
+```text
+Python
+  ↓
+SQL
+  ↓
+PySpark
+  ↓
+Delta Lake
+  ↓
+Databricks
+  ↓
+Medallion Architecture
+  ↓
+Data Modeling
+  ↓
+Batch Processing
+  ↓
+Streaming
+  ↓
+Gold Analytics
+  ↓
+Dashboard
+  ↓
+Production Pipeline
+```
+
+The project is designed to demonstrate practical experience with building and managing a modern Lakehouse pipeline.
+
+---
+
+# 🔮 Future Improvements
+
+Planned improvements include:
+
+- Implement continuous JSON ingestion using Auto Loader
+- Integrate batch and streaming data
+- Implement a declarative Lakeflow pipeline
+- Add data quality checks
+- Improve Gold-layer analytics
+- Add additional customer analytics
+- Add more dashboard KPIs
+- Create scheduled production workflows
+- Add pipeline monitoring and failure handling
+
+---
+
+# 👨‍💻 Author
+
+**Youssef Alaraby**
