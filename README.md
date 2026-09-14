@@ -126,8 +126,9 @@ Dashboard
 The project includes a Databricks dashboard for monitoring and analyzing ShopStream's business performance.
 
 ## Current Dashboard
+<img width="1254" height="612" alt="dashboard" src="https://github.com/user-attachments/assets/b3e0082c-e20d-4628-a29b-11121be905f1" />
 
-![ShopStream Dashboard](dashboard.png)
+
 
 ### Current visualizations
 
