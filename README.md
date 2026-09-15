@@ -379,34 +379,6 @@ The project covers:
 
 ---
 
-# 📁 Repository Structure
-
-```text
-ShopStream/
-│
-├── README.md
-├── dashboard.png
-│
-├── notebooks/
-│   ├── bronze/
-│   │   └── ...
-│   │
-│   ├── silver/
-│   │   └── ...
-│   │
-│   └── gold/
-│       └── ...
-│
-├── pipelines/
-│   └── ...
-│
-└── jobs/
-    └── ...
-```
-
-The exact structure may evolve as additional pipeline components are added.
-
----
 
 # 📚 Key Learning Outcomes
 
