@@ -64,6 +64,8 @@ COPY INTO
 Bronze Delta Table
 ```
 
+Streaming order events are ingested continuously via **Auto Loader**, landing new JSON events into the same unified `orders` Bronze table alongside the historical batch rows.
+
 ---
 
 ## 🥈 Silver Layer
@@ -88,6 +90,8 @@ Cleaning & Transformation
    ↓
 Silver
 ```
+
+Because the Bronze `orders` table contains rows from two different sources with different identifier schemes, Silver reconciles them into one canonical schema — see **Engineering Notes** below.
 
 ---
 
@@ -128,8 +132,6 @@ The project includes a Databricks dashboard for monitoring and analyzing ShopStr
 ## Current Dashboard
 <img width="1254" height="612" alt="dashboard" src="https://github.com/user-attachments/assets/b3e0082c-e20d-4628-a29b-11121be905f1" />
 
-
-
 ### Current visualizations
 
 - **Gross Margin by Category**
@@ -159,6 +161,7 @@ These visualizations help analyze business performance across:
 | **Auto Loader** | Streaming file ingestion |
 | **SQL** | Data analysis and transformation |
 | **Databricks Dashboards** | Business analytics |
+| **Databricks Lakeflow Jobs** | Orchestration and task scheduling |
 | **Git & GitHub** | Version control |
 
 ---
@@ -317,39 +320,43 @@ Gold
 Dashboard
 ```
 
-Auto Loader allows new files to be detected and processed incrementally as they arrive.
+Auto Loader allows new files to be detected and processed incrementally as they arrive. Streaming order events land in the same Bronze `orders` table as the historical batch data, and are reconciled into a single canonical schema during Silver processing.
+
+---
+
+# 🧩 Engineering Notes
+
+One integration challenge in this project: historical (batch) orders and streaming order events use **different identifier schemes**. Batch rows carry a real `order_line_id`, while streaming events instead carry an `event_id` (with `order_line_id` left null) and use a separate `event_ts` field instead of `order_ts`.
+
+The Silver layer reconciles this by:
+
+- Coalescing `order_line_id` and `event_id` into one canonical `order_line_id`
+- Coalescing `order_ts` and `event_ts` into one canonical `order_timestamp`
+- Tagging each row with a `source_system` column (`batch` or `streaming`) for lineage and debugging
+
+This lets downstream Silver and Gold logic treat both sources identically, without needing to know which pipeline a given row originally came from.
 
 ---
 
 # ⚙️ Production Workflow
 
-The final project will include a production-oriented Databricks workflow containing:
-
-- Scheduled jobs
-- Multiple tasks
-- Task dependencies
-- Batch processing
-- Streaming processing
-- Data quality checks
-- Monitoring
-
-Example:
+The production pipeline is orchestrated as a **Databricks Lakeflow Job** (`shop_stream_job`) with explicit task dependencies, chaining notebooks into a single scheduled DAG on serverless compute:
 
 ```text
-Ingest
-  │
-  ▼
-Bronze
-  │
-  ▼
-Silver
-  │
-  ▼
-Gold
-  │
-  ▼
-Dashboard
+                         ┌──► customer_processing ──┐
+                         │                           │
+load_historical_data ────┼──► products_processing ───┼──► gold_processing
+                         │                           │
+streaming_data ──────────┴──► order_processing ──────┘
 ```
+
+- **`load_historical_data`** and **`streaming_data`** run as independent root tasks — one loads the historical CSVs into Bronze, the other runs Auto Loader against the incoming JSON order events.
+- **`order_processing`** depends on **both** root tasks, since the Bronze `orders` table is fed by both the batch load and the streaming feed.
+- **`customer_processing`** and **`products_processing`** depend only on `load_historical_data`, since those dimensions have no streaming source.
+- **`gold_processing`** depends on all three Silver tasks, ensuring Gold always builds from fully refreshed data.
+
+All tasks run on **serverless** compute.
+<img width="970" height="540" alt="image" src="https://github.com/user-attachments/assets/5737e42f-69af-42cc-bb6e-6b95b013798f" />
 
 ---
 
@@ -369,16 +376,15 @@ The project covers:
 - [x] Dimensional modeling
 - [x] Business metrics
 - [x] Databricks dashboard
-- [ ] Streaming ingestion with Auto Loader
-- [ ] Batch + streaming integration
-- [ ] Declarative Lakeflow pipeline
-- [ ] Data quality expectations
-- [ ] Production Databricks Job
-- [ ] Task dependencies
+- [x] Streaming ingestion with Auto Loader
+- [x] Batch + streaming integration
+- [ ] Declarative Lakeflow Pipeline (DLT)
+- [x] Data quality checks
+- [x] Production Databricks Lakeflow Job
+- [x] Task dependencies
 - [ ] Pipeline monitoring
 
 ---
-
 
 # 📚 Key Learning Outcomes
 
@@ -418,15 +424,11 @@ The project is designed to demonstrate practical experience with building and ma
 
 Planned improvements include:
 
-- Implement continuous JSON ingestion using Auto Loader
-- Integrate batch and streaming data
-- Implement a declarative Lakeflow pipeline
-- Add data quality checks
+- Implement a Lakeflow Declarative Pipeline (DLT) version of Bronze → Silver → Gold
+- Add pipeline monitoring and failure alerting to the Lakeflow Job
 - Improve Gold-layer analytics
 - Add additional customer analytics
 - Add more dashboard KPIs
-- Create scheduled production workflows
-- Add pipeline monitoring and failure handling
 
 ---
 
